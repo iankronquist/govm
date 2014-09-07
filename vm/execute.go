@@ -11,7 +11,7 @@ func InitVM() *ApplicationMemory {
 	return memory
 }
 
-func (memory *ApplicationMemory) LoadProgram(program []byte, startAddr int16) {
+func (memory *ApplicationMemory) LoadProgram(program []byte, startAddr uint16) {
 	fmt.Println("Load Program")
 	fmt.Println(program)
 	if int(startAddr) + len(program) > len(memory.memory_space) {
@@ -30,11 +30,12 @@ func (memory *ApplicationMemory) RunProgram(program []byte) {
 	}
 	start := load2BytesIntoInt16(program[3:5])
 	memory.LoadProgram(program[5:], start)
-	memory.Execute(start, int16(len(program)))
+	memory.Execute(start, uint16(len(program)))
 }
 
 func (memory *ApplicationMemory) PrintScreen() {
 	fmt.Println("Print Screen")
+	fmt.Println(memory.graphics_memory)
 	for col := 0; col < len(memory.graphics_memory)/50; col++ {
 		for row := col * 50; row < (col + 1) * 50; row++ {
 			fmt.Print(string(memory.graphics_memory[row] & 255))
@@ -43,7 +44,7 @@ func (memory *ApplicationMemory) PrintScreen() {
 	}
 }
 
-func (memory *ApplicationMemory) Execute(execAddr int16, length int16) {
+func (memory *ApplicationMemory) Execute(execAddr uint16, length uint16) {
 	fmt.Println("Execute")
 	instructionAddr := execAddr
 	fmt.Println(execAddr)
@@ -59,17 +60,32 @@ func (memory *ApplicationMemory) Execute(execAddr int16, length int16) {
 			case 0x01: // LDA
 				instructionAddr++
 				memory.register_A = memory.memory_space[instructionAddr]
+				fmt.Println("LDA: ", memory.register_A)
 			case 0x03: // STA
 				instructionAddr++
-				value := memory.memory_space[instructionAddr]
-				memory.memory_space[value] = memory.register_A
+				register := memory.memory_space[instructionAddr]
+				value := [2]byte{0, 0}
+				switch register {
+					case A:
+						value = [2]byte{0, memory.register_A}
+					case B:
+						value = [2]byte{0, memory.register_B}
+					case D:
+						value = memory.getD()
+					case X:
+						value = memory.register_X
+					case Y:
+						value = memory.register_Y
+				}
+				index := load2BytesIntoInt16(value[:])
+				fmt.Println("value ", value, index)
+				fmt.Println("register ", memory.register_A)
+				memory.memory_space[index] = memory.register_A
 			case 0x04: // END
-				fmt.Println("here?")
-				instructionAddr = load2BytesIntoInt16(memory.memory_space[instructionAddr+1:instructionAddr+2])
-				fmt.Println("there?")
+				instructionAddr = load2BytesIntoInt16(memory.memory_space[instructionAddr+1:instructionAddr+3])
 				if instructionAddr > execAddr + length ||
 					instructionAddr < execAddr {
-					panic("INVALID MEMORY ACCESS")
+					//panic("INVALID MEMORY ACCESS")
 				}
 				return
 			default:
@@ -79,14 +95,14 @@ func (memory *ApplicationMemory) Execute(execAddr int16, length int16) {
 	}
 }
 
-func load2BytesIntoInt16(input []byte) int16 {
-	out := int16(input[0])
+func load2BytesIntoInt16(input []byte) uint16 {
+	out := uint16(input[0])
 	out <<= 8
-	out += int16(input[1])
+	out += uint16(input[1])
 	return out
 }
 
-func Int16IntoTwoBytes(input int16, output []byte) {
+func Int16IntoTwoBytes(input uint16, output []byte) {
 	output[1] = byte(input & 255)
 	input >>= 8
 	output[0] = byte(input)

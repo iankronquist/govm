@@ -5,8 +5,8 @@ type ApplicationMemory struct {
 	register_B byte
 	register_X [2]byte
 	register_Y [2]byte
-	startAddress int16
-	execAddress int16
+	startAddress uint16
+	execAddress uint16
 	memory_space *[0x10000]byte // 64kb
 	graphics_memory []byte
 }

@@ -21,7 +21,7 @@ func Assemble(input_file_name *string, ouput_file_name *string, origin *string) 
 	}
 	out_file.Write([]byte("G32"))
 	out_file.Write([]byte{byte(0x03), byte(0xe8)})
-	out_file.Write([]byte{byte(0), byte(0)})
+	//out_file.Write([]byte{byte(0), byte(0)})
 	Parse(input_file, out_file)
 }
 
